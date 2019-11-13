@@ -27,7 +27,14 @@ public class SwiftFlutterImageEditorPlugin: NSObject, FlutterPlugin {
 
     public func handleResult(call: FlutterMethodCall, outputMemory: Bool, result: @escaping FlutterResult) {
         DispatchQueue.global().async{
-            guard let image = call.getUIImage() else {
+            guard let wrapper = call.getUIImageWrapper() else {
+                DispatchQueue.main.sync {
+                     result(FlutterError(code: "decode image error", message: nil, details: nil))
+                }
+                return
+            }
+            
+            guard let image = wrapper.image else{
                 DispatchQueue.main.sync {
                      result(FlutterError(code: "decode image error", message: nil, details: nil))
                 }
@@ -40,16 +47,24 @@ public class SwiftFlutterImageEditorPlugin: NSObject, FlutterPlugin {
             let optionMap = args["options"] as! [Any]
             let options = ConvertUtils.getOptions(options: optionMap)
             let format = ConvertUtils.getFormat(args: args)
+            let keepExif = args["keepExif"] as! Bool
+            
             imageHandler.handleImage(options: options)
 
             if outputMemory {
-                let momery = imageHandler.outputMemory(format: format)
+                var momery = imageHandler.outputMemory(format: format)
+                if keepExif, wrapper.exifKeeper != nil {
+                    momery = wrapper.exifKeeper!.saveExif(data: momery)
+                }
                 DispatchQueue.main.sync {
                     result(momery)
                 }
             } else {
                 let target = args["target"] as! String
                 imageHandler.outputFile(targetPath: target, format: format)
+                if keepExif, wrapper.exifKeeper != nil {
+                    wrapper.exifKeeper!.saveExif(path: target)
+                }
                 DispatchQueue.main.sync {
                     result(target)
                 }
@@ -77,4 +92,32 @@ extension FlutterMethodCall {
 
         return UIImage(data: image)
     }
+    
+    func getUIImageWrapper() -> UIImageWrapper? {
+        let args = arguments as! [String: Any]
+
+        let src = args["src"] as? String
+
+        if src != nil {
+            let url = URL(fileURLWithPath: src!)
+            let image = UIImage(contentsOfFile: url.absoluteString)
+            let data = try? Data(contentsOf: url)
+            let keeper = ExifKeeper(data: data)
+            if image == nil{
+                return nil
+            }
+            return UIImageWrapper(image: image, exifKeeper: keeper)
+        }
+
+        guard let imageArgs = args["image"] as? FlutterStandardTypedData else {
+            return nil
+        }
+
+        let data = imageArgs.data
+        let keeper = ExifKeeper(data: data)
+        let image = UIImage(data: data)
+        return UIImageWrapper(image: image, exifKeeper: keeper)
+    }
+    
+    
 }
