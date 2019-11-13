@@ -25,6 +25,7 @@ class NativeChannel {
       "target": targetPath,
       "options": option.toJson(),
       "fmt": option.outputFormat.toJson(),
+      "keepExif": option.keepExif,
     });
   }
 
@@ -38,6 +39,7 @@ class NativeChannel {
       "image": memory,
       "options": option.toJson(),
       "fmt": option.outputFormat.toJson(),
+      "keepExif": option.keepExif,
     });
   }
 
@@ -51,6 +53,7 @@ class NativeChannel {
       "src": path,
       "options": option.toJson(),
       "fmt": option.outputFormat.toJson(),
+      "keepExif": option.keepExif,
     });
   }
 
@@ -65,6 +68,7 @@ class NativeChannel {
       "target": target,
       "options": option.toJson(),
       "fmt": option.outputFormat.toJson(),
+      "keepExif": option.keepExif,
     });
   }
 }

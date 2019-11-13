@@ -20,6 +20,8 @@ class ImageEditorOption implements IgnoreAble {
 
   OutputFormat outputFormat = OutputFormat.jpeg(95);
 
+  bool keepExif = false;
+
   List<Option> get options {
     List<Option> result = [];
     for (final group in groupList) {

@@ -8,6 +8,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import top.kikt.flutter_image_editor.core.ExifWrapper
 import top.kikt.flutter_image_editor.core.ImageHandler
 import top.kikt.flutter_image_editor.core.ResultHandler
 import top.kikt.flutter_image_editor.error.BitmapDecodeException
@@ -71,7 +72,6 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
         printWriter.use {
           e.printStackTrace(printWriter)
           resultHandler.replyError(writer.buffer.toString(), "", null)
-          
         }
       }
     }
@@ -145,7 +145,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
         flipOption = FlipOption(horizontal = true)
       }
     }
-    return BitmapWrapper(bitmap, degree, flipOption)
+    return BitmapWrapper(bitmap, degree, flipOption, exifInterface)
     
   }
   
@@ -155,15 +155,27 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
   }
   
   
-  private fun handle(imageHandler: ImageHandler, formatOption: FormatOption, outputMemory: Boolean, resultHandler: ResultHandler, targetPath: String? = null) {
+  private fun handle(imageHandler: ImageHandler, formatOption: FormatOption, outputMemory: Boolean, resultHandler: ResultHandler, targetPath: String? = null, keepExif: Boolean, exifWrapper: ExifWrapper) {
     if (outputMemory) {
-      val byteArray = imageHandler.outputByteArray(formatOption)
+      var byteArray = imageHandler.outputByteArray(formatOption)
+      if (keepExif) {
+        try {
+          byteArray = exifWrapper.saveTo(registrar.context(), byteArray)
+        } catch (e: Exception) {
+        }
+      }
       resultHandler.reply(byteArray)
     } else {
       if (targetPath == null) {
         resultHandler.reply(null)
       } else {
         imageHandler.outputToFile(targetPath, formatOption)
+        if (keepExif) {
+          try {
+            exifWrapper.saveTo(targetPath)
+          } catch (e: Exception) {
+          }
+        }
         resultHandler.reply(targetPath)
       }
     }
@@ -172,9 +184,14 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
   private fun handle(call: MethodCall, resultHandler: ResultHandler, outputMemory: Boolean) {
     val bitmapWrapper = call.getBitmap()
     val imageHandler = ImageHandler(bitmapWrapper.bitmap)
+    val keepExif = call.getKeepExif()
     imageHandler.handle(call.getOptions(bitmapWrapper))
-    handle(imageHandler, call.getFormatOption(), outputMemory, resultHandler, call.getTarget())
+    handle(imageHandler, call.getFormatOption(), outputMemory, resultHandler, call.getTarget(), keepExif, ExifWrapper(bitmapWrapper.exifInterface))
   }
 }
 
-data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption)
+private fun MethodCall.getKeepExif(): Boolean {
+  return this.argument<Boolean>("keepExif")!!
+}
+
+data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption, val exifInterface: ExifInterface)
