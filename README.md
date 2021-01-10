@@ -1,5 +1,6 @@
 # image_editor
 
+
 ![BUILD](https://github.com/fluttercandies/flutter_image_editor/workflows/PR/badge.svg)
 
 The version of readme pub and github may be inconsistent, please refer to [github](https://github.com/fluttercandies/flutter_image_editor).
@@ -30,8 +31,11 @@ Use native(objc,kotlin) code to handle image data, it is easy to process picture
     - [Third party](#third-party)
 
 ## Screenshot
+|   |   | 
+|-------------- | -------------- | 
+| ![img](https://github.com/kikt-blog/image/raw/master/github/flutter_image_editor_ss.gif)   | ![screen](yy.gif)     | 
 
-![img](https://github.com/kikt-blog/image/raw/master/github/flutter_image_editor_ss.gif)
+
 
 ## Platform of support
 
